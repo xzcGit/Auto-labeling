@@ -1,0 +1,37 @@
+project:
+  name: "auto_annotation_project"
+  version: "1.0.0"
+
+paths:
+  data_root: "./data"
+  model_root: "./models"
+  output_root: "./output"
+
+training:
+  model_type: "yolov8"        # yolov5, yolov8, yolov11
+  model_size: "n"             # n, s, m, l, x
+  pretrained: true
+  epochs: 100
+  batch_size: 16
+  img_size: 640
+  device: "cuda"              # cuda, cpu, mps
+  workers: 8
+  patience: 50                # early stopping
+  save_period: 10             # save checkpoint every N epochs
+  
+validation:
+  split_ratio: 0.2
+  shuffle: true
+  random_seed: 42
+
+auto_annotation:
+  confidence_threshold: 0.7
+  iou_threshold: 0.45
+  max_det: 300
+  review_threshold: 0.5       # below this needs manual review
+  batch_size: 32
+  save_visualizations: true
+  
+dataset:
+  num_classes: null           # auto-detect from data
+  class_names: []             # read from data.yaml

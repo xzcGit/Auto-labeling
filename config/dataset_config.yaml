@@ -1,0 +1,6 @@
+names:
+  0: 'pointerMeter'
+nc: 1
+path: F:\code\utils\model_train\data
+train: train/images
+val: val/images
