@@ -228,6 +228,101 @@ python run_pipeline.py --mode train
 python run_pipeline.py --mode annotate --model models/trained/train/weights/best.pt
 ```
 
+### 示例3：按类别批量训练 🆕
+
+适合需要同时训练多个不同类别模型的场景。
+
+#### 准备数据结构
+
+```
+data/raw/
+├── category_A/              # 第一个类别
+│   ├── images/             # 已标注图像
+│   └── labels/             # 对应标注
+├── category_A_unlabeled/   # 待标注（可选）
+│   └── images/
+├── category_B/              # 第二个类别
+│   ├── images/
+│   └── labels/
+└── category_B_unlabeled/
+    └── images/
+```
+
+#### 实际案例：工业仪表检测
+
+假设您需要识别三种仪表：
+
+```bash
+# 1. 准备数据
+data/raw/
+├── pointer_meter/           # 指针表：50张已标注
+│   ├── images/
+│   └── labels/
+├── pointer_meter_unlabeled/ # 指针表：1000张待标注
+│   └── images/
+├── digital_meter/           # 数字表：30张已标注
+│   ├── images/
+│   └── labels/
+├── digital_meter_unlabeled/ # 数字表：500张待标注
+│   └── images/
+├── switch_button/           # 开关：20张已标注
+│   ├── images/
+│   └── labels/
+└── switch_button_unlabeled/ # 开关：300张待标注
+    └── images/
+
+# 2. 一键批量训练所有类别
+python scripts/train_by_category.py
+
+# 3. 查看各类别的结果
+# 模型保存位置
+dir models\trained\pointer_meter\train\weights\best.pt
+dir models\trained\digital_meter\train\weights\best.pt
+dir models\trained\switch_button\train\weights\best.pt
+
+# 预测结果位置
+dir output\pointer_meter_predictions\labels\high_conf
+dir output\digital_meter_predictions\labels\high_conf
+dir output\switch_button_predictions\labels\high_conf
+```
+
+#### 输出说明
+
+批量训练会为每个类别生成：
+
+1. **独立的数据集**
+   ```
+   data/pointer_meter/train/
+   data/pointer_meter/val/
+   ```
+
+2. **独立的模型**
+   ```
+   models/trained/pointer_meter/train/weights/best.pt
+   ```
+
+3. **独立的预测结果**（如果有待标注数据）
+   ```
+   output/pointer_meter_predictions/
+   ├── labels/
+   │   ├── high_conf/
+   │   ├── medium_conf/
+   │   └── low_conf/
+   └── statistics.json
+   ```
+
+4. **独立的配置文件**
+   ```
+   config/pointer_meter_dataset.yaml
+   ```
+
+#### 优势
+
+- ✅ 一次运行，处理所有类别
+- ✅ 每个类别独立训练，互不干扰
+- ✅ 自动管理各类别的数据、模型和结果
+- ✅ 适合多类别并行开发场景
+
 ## 🔧 故障排除
 
 ### 问题1：CUDA不可用
