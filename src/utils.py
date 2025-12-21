@@ -52,11 +52,11 @@ def ensure_dir(path: str):
 
 def get_image_files(directory: str, extensions=('.jpg', '.jpeg', '.png', '.bmp')):
     """Get all image files in directory"""
-    image_files = set()
+    image_files = []
     for ext in extensions:
         image_files.extend(Path(directory).glob(f'*{ext}'))         # linux系统会区分大小写，但是windows不区分大小写
         image_files.extend(Path(directory).glob(f'*{ext.upper()}'))
-    return sorted(list(image_files))
+    return sorted(image_files)
 
 
 def convert_bbox_to_yolo(bbox, img_width, img_height):

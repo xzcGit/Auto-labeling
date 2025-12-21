@@ -38,11 +38,13 @@ data/raw/
 
 标注格式为YOLO格式（每行：`class_id x_center y_center width height`，坐标归一化）
 
-### 3. 运行完整流程
+### 3. 运行批量训练
 
 ```bash
-python run_pipeline.py --mode full --raw-data data/raw --unlabeled data/unlabeled/images
+python scripts/train_by_category.py
 ```
+
+该脚本会自动扫描 `data/raw/` 下的所有类别目录，为每个类别独立训练模型并自动标注待标注数据。
 
 ## 📖 详细使用说明
 
@@ -85,23 +87,7 @@ python scripts/auto_label.py --model models/trained/train/weights/best.pt --imag
 - `--output`: 输出目录
 - `--conf-threshold`: 置信度阈值（可选）
 
-### 方式二：使用Pipeline
-
-```bash
-# 完整流程
-python run_pipeline.py --mode full
-
-# 仅准备数据
-python run_pipeline.py --mode prepare --raw-data data/raw
-
-# 仅训练
-python run_pipeline.py --mode train
-
-# 仅标注
-python run_pipeline.py --mode annotate --model path/to/model.pt --unlabeled data/unlabeled/images
-```
-
-### 方式三：按类别批量训练 🆕
+### 方式二：按类别批量训练 🆕
 
 适用于需要同时训练多个不同类别模型的场景（如：指针表、数字表、开关按钮等）。
 
@@ -275,8 +261,11 @@ model_train/
 │   ├── trainer.py
 │   ├── predictor.py
 │   └── auto_annotator.py
-├── scripts/             # 命令行脚本
-└── run_pipeline.py      # 完整流程脚本
+└── scripts/             # 命令行脚本
+    ├── prepare_data.py
+    ├── train_model.py
+    ├── auto_label.py
+    └── train_by_category.py
 ```
 
 ## 🐛 常见问题

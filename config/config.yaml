@@ -11,21 +11,49 @@ training:
   model_type: "yolov8"        # yolov5, yolov8, yolov11
   model_size: "n"             # n, s, m, l, x
   pretrained: true
-  epochs: 100
-  batch_size: 16
+  epochs: 300
+  batch_size: 4               # 小样本用更小的batch
   img_size: 640
   device: "cuda"              # cuda, cpu, mps
-  workers: 8
-  patience: 50                # early stopping
+  workers: 2
+  patience: 100               # 小样本需要更多耐心
   save_period: 10             # save checkpoint every N epochs
-  
+  amp: true                   # 混合精度训练
+
+  # 小样本优化：冻结backbone
+  freeze: 10                  # 冻结前N层（0=不冻结，10=冻结backbone，推荐小样本使用）
+
+  # 小样本优化参数
+  lr0: 0.001                  # 初始学习率（降低以防过拟合）
+  lrf: 0.01                   # 最终学习率因子
+  momentum: 0.937
+  weight_decay: 0.0005
+  warmup_epochs: 5            # 预热轮数
+  warmup_momentum: 0.8
+  warmup_bias_lr: 0.1
+
+  # 数据增强（小样本必须强增强）
+  hsv_h: 0.015                # HSV色调增强
+  hsv_s: 0.7                  # HSV饱和度增强
+  hsv_v: 0.4                  # HSV明度增强
+  degrees: 10.0               # 旋转角度
+  translate: 0.1              # 平移
+  scale: 0.9                  # 缩放
+  shear: 5.0                  # 剪切
+  perspective: 0.0005         # 透视变换
+  flipud: 0.0                 # 上下翻转概率
+  fliplr: 0.5                 # 左右翻转概率
+  mosaic: 1.0                 # Mosaic增强概率
+  mixup: 0.15                 # Mixup增强概率
+  copy_paste: 0.3             # Copy-paste增强概率
+
 validation:
-  split_ratio: 0.2
+  split_ratio: 0.1            # 小样本用更少验证集（18训练/2验证）
   shuffle: true
   random_seed: 42
 
 auto_annotation:
-  confidence_threshold: 0.7
+  confidence_threshold: 0.25  # 降低阈值以获得更多候选
   iou_threshold: 0.45
   max_det: 300
   review_threshold: 0.5       # below this needs manual review

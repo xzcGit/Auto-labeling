@@ -33,6 +33,7 @@ data/raw/
 data/train/
 data/val/
 data/unlabeled/
+data/*
 
 # Models
 models/pretrained/

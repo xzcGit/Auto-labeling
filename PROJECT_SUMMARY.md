@@ -52,13 +52,20 @@ model_train/
 │   ├── trainer.py
 │   ├── predictor.py
 │   └── auto_annotator.py
-├── scripts/             # 命令行脚本
-└── run_pipeline.py      # 完整流程
+└── scripts/             # 命令行脚本
+    ├── prepare_data.py
+    ├── train_model.py
+    ├── auto_label.py
+    └── train_by_category.py
 ```
 
 ## 使用示例
 
 ```bash
+# 批量训练所有类别
+python scripts/train_by_category.py
+
+# 或分步执行单个类别
 # 1. 准备数据
 python scripts/prepare_data.py --data-dir data/raw --output-dir data
 
@@ -68,9 +75,6 @@ python scripts/train_model.py --config config/config.yaml
 # 3. 自动标注
 python scripts/auto_label.py --model models/trained/best.pt \
     --images data/unlabeled/images --output output/predictions
-
-# 或运行完整流程
-python run_pipeline.py --config config/config.yaml --mode full
 ```
 
 ## 下一步行动

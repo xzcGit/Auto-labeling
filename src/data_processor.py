@@ -95,10 +95,10 @@ class DatasetOrganizer:
                         parts = line.strip().split()
                         if parts:
                             class_ids.add(int(parts[0]))
-        
+
         num_classes = len(class_ids)
         class_names = {i: f"class{i}" for i in sorted(class_ids)}
-        
+
         config = {
             'path': str(self.data_root.absolute()),
             'train': 'train/images',
@@ -106,7 +106,8 @@ class DatasetOrganizer:
             'nc': num_classes,
             'names': class_names
         }
-        
-        config_path = self.data_root.parent / "config" / "dataset_config.yaml"
+
+        # Save config directly in data_root
+        config_path = self.data_root / "dataset_config.yaml"
         save_config(config, str(config_path))
         self.logger.info(f"Dataset config saved to {config_path}")

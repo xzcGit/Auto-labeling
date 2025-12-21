@@ -75,10 +75,10 @@ model_train/
 │   ├── prepare_data.py          # 数据准备脚本
 │   ├── train_model.py           # 训练脚本
 │   ├── auto_label.py            # 自动标注脚本
+│   ├── train_by_category.py     # 批量训练脚本
 │   └── evaluate.py              # 评估脚本
 ├── requirements.txt             # 依赖包
-├── README.md                    # 项目说明
-└── run_pipeline.py              # 完整流程脚本
+└── README.md                    # 项目说明
 ```
 
 ## 4. 技术栈
@@ -282,8 +282,8 @@ python scripts/evaluate.py --predictions output/predictions/labels --ground-trut
 
 ### 完整流程
 ```bash
-# 运行完整pipeline
-python run_pipeline.py --config config/config.yaml --mode full
+# 批量训练所有类别
+python scripts/train_by_category.py
 ```
 
 ## 12. 监控和日志

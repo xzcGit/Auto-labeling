@@ -122,19 +122,17 @@ python scripts/auto_label.py \
     --conf-threshold 0.6
 ```
 
-#### 3.4 评估脚本 (`scripts/evaluate.py`)
+#### 3.4 批量训练脚本 (`scripts/train_by_category.py`)
+```bash
+python scripts/train_by_category.py
+```
+
+#### 3.5 评估脚本 (`scripts/evaluate.py`)
 ```bash
 python scripts/evaluate.py \
     --predictions output/predictions/labels \
     --ground-truth data/val/labels \
     --output output/metrics
-```
-
-#### 3.5 完整流程脚本 (`run_pipeline.py`)
-```bash
-python run_pipeline.py \
-    --config config/config.yaml \
-    --mode full
 ```
 
 ### 阶段4: 文档和测试 (预计1-2小时)
@@ -265,8 +263,8 @@ onnxruntime>=1.15.0
 - [ ] 创建prepare_data.py脚本
 - [ ] 创建train_model.py脚本
 - [ ] 创建auto_label.py脚本
+- [ ] 创建train_by_category.py脚本
 - [ ] 创建evaluate.py脚本
-- [ ] 创建run_pipeline.py脚本
 - [ ] 编写README.md
 - [ ] 创建使用示例
 - [ ] 测试完整工作流
