@@ -2,6 +2,7 @@
 
 from ultralytics import YOLO
 from pathlib import Path
+from typing import Optional
 from .utils import setup_logger, ensure_dir
 
 
@@ -13,18 +14,26 @@ class YOLOTrainer:
         self.logger = setup_logger(__name__)
         self.model = None
         
-    def load_model(self):
-        """Load YOLO model"""
-        model_type = self.config['training']['model_type']
-        model_size = self.config['training']['model_size']
-        pretrained = self.config['training']['pretrained']
-        
+    def load_model(self, model_path: Optional[str] = None):
+        """Load YOLO model.
+
+        Args:
+            model_path: Optional path to a .pt weights file to initialize from.
+                When omitted, uses training.model_type/model_size/pretrained to
+                build the default base model name.
+        """
+        if model_path:
+            self.logger.info(f"Loading model from weights: {model_path}")
+            self.model = YOLO(model_path)
+            return self.model
+
+        model_type = self.config["training"]["model_type"]
+        model_size = self.config["training"]["model_size"]
+        pretrained = self.config["training"]["pretrained"]
+
         model_name = f"{model_type}{model_size}"
-        if pretrained:
-            model_name += ".pt"
-        else:
-            model_name += ".yaml"
-        
+        model_name += ".pt" if pretrained else ".yaml"
+
         self.logger.info(f"Loading model: {model_name}")
         self.model = YOLO(model_name)
         return self.model
@@ -49,7 +58,7 @@ class YOLOTrainer:
             'workers': train_cfg['workers'],
             'amp': train_cfg['amp'],
             'patience': train_cfg['patience'],
-            'save_period': train_cfg.get('save_period', 10),
+            'save_period': train_cfg.get('save_period', -1),
             'project': str(output_dir),
             'name': 'train',
             'exist_ok': True,

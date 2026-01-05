@@ -1,8 +1,9 @@
 """Auto-annotation module for generating YOLO labels"""
 
 import json
+import torch
 from pathlib import Path
-from typing import List
+from typing import Optional
 from tqdm import tqdm
 from .utils import setup_logger, ensure_dir, get_image_files
 from .predictor import YOLOPredictor
@@ -58,6 +59,82 @@ class AutoAnnotator:
         
         self.logger.info(f"Annotation complete: {stats}")
         return stats
+
+    def annotate_images_yolo(
+        self,
+        image_dir: str,
+        labels_dir: str,
+        *,
+        skip_existing: bool = True,
+        write_empty: bool = True,
+        report_path: Optional[str] = None,
+    ):
+        """Annotate images and write YOLO-format labels directly into a labels directory.
+
+        This mode is designed for incremental station/category datasets, where rerunning the
+        command should only label new images by default.
+
+        Uses chunked processing to avoid GPU OOM errors.
+        """
+        image_files = get_image_files(image_dir)
+        labels_path = Path(labels_dir)
+        ensure_dir(str(labels_path))
+
+        if skip_existing:
+            existing = {p.stem for p in labels_path.glob("*.txt")}
+            image_files = [p for p in image_files if p.stem not in existing]
+
+        self.logger.info(f"Found {len(image_files)} images to annotate (skip_existing={skip_existing})")
+        if not image_files:
+            return {"total": 0, "high_conf": 0, "medium_conf": 0, "low_conf": 0}
+
+        # Process in chunks to avoid OOM
+        chunk_size = self.config.get('auto_annotation', {}).get('chunk_size', 50)
+        all_results = []
+
+        total_chunks = (len(image_files) + chunk_size - 1) // chunk_size
+        self.logger.info(f"Processing {len(image_files)} images in {total_chunks} chunks of {chunk_size}")
+
+        for i in range(0, len(image_files), chunk_size):
+            chunk = image_files[i:i+chunk_size]
+            chunk_num = i // chunk_size + 1
+
+            self.logger.info(f"Processing chunk {chunk_num}/{total_chunks} ({len(chunk)} images)")
+
+            # Predict on chunk
+            results = self.predictor.predict_batch(chunk)
+            all_results.extend(results)
+
+            # Clear GPU cache after each chunk
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+        review_threshold = self.config["auto_annotation"]["review_threshold"]
+        high_conf, medium_conf, low_conf = self.predictor.filter_by_confidence(
+            all_results, review_threshold
+        )
+
+        for result in tqdm(all_results, desc="Saving YOLO labels"):
+            img_path = Path(result.path)
+            label_file = labels_path / f"{img_path.stem}.txt"
+            self._save_single_yolo_label(result, label_file, write_empty=write_empty)
+
+        stats = {
+            "total": len(all_results),
+            "high_conf": len(high_conf),
+            "medium_conf": len(medium_conf),
+            "low_conf": len(low_conf),
+        }
+
+        report_file = Path(report_path) if report_path else (labels_path / "_auto_label_report.json")
+        try:
+            with open(report_file, "w", encoding="utf-8") as f:
+                json.dump(stats, f, indent=2, ensure_ascii=False)
+        except Exception:
+            self.logger.warning(f"Failed to write report: {report_file}", exc_info=True)
+
+        self.logger.info(f"YOLO label writing complete: {stats}")
+        return stats
     
     def _save_labels(self, results, output_dir: Path):
         """Save YOLO format labels"""
@@ -73,3 +150,15 @@ class AutoAnnotator:
                     cls = int(box.cls[0])
                     xywhn = box.xywhn[0].tolist()
                     f.write(f"{cls} {' '.join(map(str, xywhn))}\n")
+
+    def _save_single_yolo_label(self, result, label_file: Path, *, write_empty: bool) -> None:
+        if result.boxes is None or len(result.boxes) == 0:
+            if write_empty:
+                label_file.write_text("", encoding="utf-8")
+            return
+
+        with open(label_file, "w", encoding="utf-8") as f:
+            for box in result.boxes:
+                cls = int(box.cls[0])
+                xywhn = box.xywhn[0].tolist()
+                f.write(f"{cls} {' '.join(map(str, xywhn))}\n")

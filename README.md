@@ -1,145 +1,100 @@
-# YOLO 图像自动标注系统
+# YOLO 自动标注工具
 
-基于 YOLO 的图像自动标注工具，用少量标注数据训练模型，批量标注大规模数据集。
+用少量人工标注训练/复用 YOLO 权重，对新增图片做增量自动标注。
 
 ## 安装
 
 ```bash
-pip install -r requirements.txt
+pip install -r "requirements.txt"
 ```
 
-## 快速开始
+## 数据格式（两种）
 
-### 数据准备
+### 1) 按类别批处理（category 模式）
 
-将标注数据放在 `data/raw/` 下，YOLO 格式（`class_id x_center y_center width height`）：
-
-```
-data/raw/
-├── images/
-│   └── *.jpg
-└── labels/
-    └── *.txt
-```
-
-### 一键训练
-
-**默认模式**（扫描 `data/raw/` 目录）：
-
-```bash
-python scripts/train_by_category.py
-```
-
-**自定义路径模式**：
-
-```bash
-python scripts/train_by_category.py --data-root /path/to/data
-```
-
-自动扫描指定目录下所有类别，训练模型并标注待标注数据。详见[多类别批量训练](#多类别批量训练)。
-
-## 分步执行
-
-```bash
-# 1. 准备数据集
-python scripts/prepare_data.py --data-dir data/raw --output-dir data
-
-# 2. 训练模型
-python scripts/train_model.py --config config/config.yaml --data config/dataset_config.yaml
-
-# 3. 自动标注
-python scripts/auto_label.py --model models/trained/train/weights/best.pt --images data/unlabeled/images --output output/predictions
-```
-
-## 多类别批量训练
-
-支持两种模式：
-
-### 模式一：默认模式（推荐）
-
-使用 `data/raw/` 作为根目录，数据结构：
+默认根目录：`data/raw/`
 
 ```
 data/raw/
-├── category_a/           # 已标注数据
-│   ├── images/
-│   └── labels/
-├── category_a_unlabeled/ # 待标注数据（可选）
-│   └── images/
-└── category_b/
-    ├── images/
-    └── labels/
-```
-
-运行命令：
-
-```bash
-python scripts/train_by_category.py
-```
-
-### 模式二：自定义路径模式
-
-使用自定义路径作为根目录，数据结构：
-
-```
-/path/to/data/
 ├── category_a/
-│   ├── pre_images/      # 已标注数据
-│   ├── pre_labels/      # 已标注数据
-│   ├── images/          # 待标注数据（可选）
-│   ├── category/        # 输出：训练/验证集划分（自动生成）
-│   ├── models/          # 输出：训练好的模型（自动生成）
-│   └── labels/          # 输出：自动标注结果（自动生成）
-└── category_b/
-    ├── pre_images/
-    ├── pre_labels/
-    └── images/
+│   ├── images/          # 已标注图片
+│   └── labels/          # 已标注标签（YOLO txt）
+├── category_a_unlabeled/
+│   └── images/          # 待标注图片（可选）
+└── category_b/...
 ```
 
-运行命令：
+也支持自定义 root（详见 `dataroot.md`），关键目录为：`pre_images/` + `pre_labels/` + `images/`。
+
+### 2) 按场站批处理（station / metertools 模式）
+
+根目录包含多个场站：
+```
+<stations_root>/
+  <station>/
+    det/<category>/...    # 常见
+    <category>/...        # 也支持“平铺图片目录”
+    # 也兼容：<station> 目录本身就是一个“类别目录”
+    #   <station>/{pre_images,pre_labels,images,...}
+```
+
+## 常用命令
+
+### A. 新增图片的增量标注（推荐：场站模式）
+
+对 `--stations-root` 下所有场站做增量标注（默认跳过已有 `labels/*.txt` 的图片）：
 
 ```bash
-python scripts/train_by_category.py --data-root /path/to/data
+python3 "scripts/train_by_station.py" --stations-root "/mnt/f/code/utils/19-metertools"
 ```
+
+只处理某个场站 / 某些类别：
+
+```bash
+python3 "scripts/train_by_station.py" --stations-root "/mnt/f/code/utils/19-metertools" --station "巴里坤1"
+python3 "scripts/train_by_station.py" --stations-root "/mnt/f/code/utils/19-metertools" --category "door" --category "light"
+```
+
+有新场站目录或新图片加入后，重复执行同一条命令即可。
+
+### B. 训练 + 标注（可选）
+
+仅对存在 `pre_images/` + `pre_labels/` 的类别训练；缺少标注数据的类别会自动降级为 annotate：
+
+```bash
+python3 "scripts/train_by_station.py" --stations-root "/mnt/f/code/utils/19-metertools" --action "train_and_annotate"
+```
+
+补充：如果你执行的是 `--action annotate`，但当前类别没有任何可用权重，且目录里存在可训练的标注数据（`pre_images/` + `pre_labels/` 或 `images/` + `labels/`），工具会自动训练一次以继续标注。
+
+### C. 按类别批处理（category 模式）
+
+```bash
+python3 "scripts/train_by_category.py"
+python3 "scripts/train_by_category.py" --data-root "/path/to/data"
+```
+
+## 模型复用（跨场站/跨批次）
+
+优先推荐使用共享模型目录（默认：`models/shared/`）：
+- 训练输出：`models/shared/<category>/train/weights/best.pt`
+- 轻量注册表：`models/model_registry.yaml`（类别 → best.pt）
+
+关键参数：
+- `--shared-model-root "models/shared"`：不同场站同名类别共享权重
+- `--train-init reuse`：需要训练时，用已解析到的同类别权重热启动
+- `--model-map "config/model_map.example.yaml"`：显式指定某些类别权重
+- `--pretrained-root "/path/to/weights_dir"` / `--pretrained-model "/path/to/best.pt"`：直接用已有权重做标注
+
+## 标注输出
+
+两种布局：
+- `triage`：按置信度分文件夹（`output/.../labels/high_conf|medium_conf|low_conf`）
+- `yolo`：直接写 `labels/*.txt`（适合“数据目录即项目目录”的增量标注；并生成 `labels/_auto_label_report.json`）
 
 ## 配置
 
-编辑 `config/config.yaml`：
-
-```yaml
-training:
-  model_type: "yolov8"    # yolov5, yolov8, yolov11
-  model_size: "n"         # n, s, m, l, x
-  epochs: 300
-  batch_size: 4
-  device: "cuda"
-
-auto_annotation:
-  confidence_threshold: 0.25
-```
-
-## 输出
-
-标注结果按置信度分级：
-
-```
-output/predictions/labels/
-├── high_conf/      # >0.7 可直接使用
-├── medium_conf/    # 0.5-0.7 建议抽查
-└── low_conf/       # <0.5 需人工复审
-```
-
-## 项目结构
-
-```
-├── config/          # 配置文件
-├── data/            # 数据集
-├── models/          # 模型权重
-├── output/          # 输出结果
-├── src/             # 核心代码
-├── scripts/         # 命令行脚本
-└── myutils/         # 辅助工具
-```
+主要配置在 `config/config.yaml`（训练/推理阈值、设备、batch 等）。
 
 ## License
 

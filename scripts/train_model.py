@@ -8,9 +8,6 @@ from datetime import datetime
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.trainer import YOLOTrainer
-from src.utils import load_config
-
 
 def main():
     parser = argparse.ArgumentParser(description='Train YOLO model')
@@ -26,7 +23,10 @@ def main():
                        help='Device (cuda/cpu, overrides config)')
     
     args = parser.parse_args()
-    
+
+    from src.trainer import YOLOTrainer
+    from src.utils import load_config
+
     # Load config
     config = load_config(args.config)
     
@@ -65,9 +65,12 @@ def main():
         print(f"\n{'=' * 60}")
         print(f"✓ Training completed!")
         print(f"  Duration: {duration}")
-        print(f"  Model saved to: {config['paths']['model_root']}/trained")
+        model_root = config["paths"]["model_root"]
+        best_weights = f"{model_root}/train/weights/best.pt"
+        print(f"  Model root: {model_root}")
+        print(f"  Best weights: {best_weights}")
         print(f"\nNext step: Run auto-annotation with:")
-        print(f"  python scripts/auto_label.py --model models/trained/train/weights/best.pt --images data/unlabeled/images")
+        print(f"  python3 scripts/auto_label.py --model \"{best_weights}\" --images \"data/unlabeled/images\"")
         print("=" * 60)
         
     except Exception as e:

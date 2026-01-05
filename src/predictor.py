@@ -1,5 +1,6 @@
 """Model prediction module"""
 
+import torch
 from ultralytics import YOLO
 from pathlib import Path
 from typing import List
@@ -22,23 +23,38 @@ class YOLOPredictor:
         return self.model
     
     def predict_batch(self, image_paths: List[Path], **kwargs):
-        """Predict on batch of images"""
+        """Predict on batch of images with memory optimization"""
         if self.model is None:
             self.load_model()
-        
+
+        # Clear GPU cache before prediction
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
         auto_cfg = self.config.get('auto_annotation', {})
         conf = kwargs.get('conf', auto_cfg.get('confidence_threshold', 0.6))
         iou = kwargs.get('iou', auto_cfg.get('iou_threshold', 0.45))
         max_det = kwargs.get('max_det', auto_cfg.get('max_det', 300))
-        
+        batch_size = kwargs.get('batch', auto_cfg.get('batch_size', 1))
+        img_size = kwargs.get('imgsz', auto_cfg.get('img_size', 640))
+        half = kwargs.get('half', auto_cfg.get('half', True))
+
         results = self.model.predict(
             source=image_paths,
             conf=conf,
             iou=iou,
             max_det=max_det,
-            verbose=False
+            batch=batch_size,
+            imgsz=img_size,
+            half=half,
+            verbose=False,
+            device='cuda' if torch.cuda.is_available() else 'cpu'
         )
-        
+
+        # Clear cache after prediction
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
         return results
     
     def filter_by_confidence(self, results, threshold: float = 0.5):

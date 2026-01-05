@@ -14,6 +14,53 @@ class DatasetOrganizer:
     def __init__(self, data_root: str = "./data"):
         self.data_root = Path(data_root)
         self.logger = setup_logger(__name__)
+
+    def split_dataset_from_dirs(
+        self,
+        images_dir: str,
+        labels_dir: str,
+        split_ratio: float = 0.2,
+        shuffle: bool = True,
+        seed: int = 42
+    ):
+        """Split dataset into train and validation sets from separate images/labels directories.
+
+        This is a more flexible variant of split_dataset(raw_dir=...), useful when the caller
+        already has explicit images_dir/labels_dir paths (e.g. per-category layouts).
+        """
+        images_path = Path(images_dir)
+        labels_path = Path(labels_dir)
+
+        if not images_path.exists():
+            raise ValueError(f"Images directory not found: {images_path}")
+        if not labels_path.exists():
+            raise ValueError(f"Labels directory not found: {labels_path}")
+
+        image_files = get_image_files(str(images_path))
+        label_files = list(labels_path.glob("*.txt"))
+
+        self.logger.info(f"Found {len(image_files)} images and {len(label_files)} labels")
+
+        image_dict = {f.stem: f for f in image_files}
+        label_dict = {f.stem: f for f in label_files}
+        matched_stems = list(set(image_dict.keys()) & set(label_dict.keys()))
+
+        if shuffle:
+            random.seed(seed)
+            random.shuffle(matched_stems)
+
+        split_idx = int(len(matched_stems) * (1 - split_ratio))
+        train_stems = matched_stems[:split_idx]
+        val_stems = matched_stems[split_idx:]
+
+        self.logger.info(f"Train: {len(train_stems)}, Val: {len(val_stems)}")
+
+        self._copy_files(train_stems, image_dict, label_dict, "train")
+        self._copy_files(val_stems, image_dict, label_dict, "val")
+
+        self._create_dataset_config(train_stems, label_dict)
+
+        return len(train_stems), len(val_stems)
         
     def validate_dataset(self, raw_dir: str) -> Tuple[List[Path], List[Path]]:
         """Validate raw dataset structure"""

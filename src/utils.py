@@ -11,22 +11,30 @@ def setup_logger(name: str, log_file: str = None, level=logging.INFO) -> logging
     """Setup logger with file and console handlers"""
     logger = logging.getLogger(name)
     logger.setLevel(level)
+    logger.propagate = False
     
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
     
-    # Console handler
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
+    # Avoid adding duplicate handlers when called multiple times
+    if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
     
     # File handler
     if log_file:
         os.makedirs(os.path.dirname(log_file), exist_ok=True)
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
+        abs_log_file = str(Path(log_file).resolve())
+        existing_file_handlers = [
+            h for h in logger.handlers
+            if isinstance(h, logging.FileHandler) and getattr(h, "baseFilename", None) == abs_log_file
+        ]
+        if not existing_file_handlers:
+            file_handler = logging.FileHandler(abs_log_file)
+            file_handler.setFormatter(formatter)
+            logger.addHandler(file_handler)
     
     return logger
 

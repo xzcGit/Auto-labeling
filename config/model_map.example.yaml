@@ -1,0 +1,10 @@
+# category_name -> weights_path
+#
+# 支持绝对路径，也支持相对路径（相对当前文件所在目录解析）
+#
+# 示例：
+#  category_a: "/path/to/category_a/train/weights/best.pt"
+#  category_b: "../models/category_b/best.pt"
+#
+# 也可以只给某些类别配置；未配置的类别会回退到 registry / 本地训练产物 / pretrained-root 等策略。
+category_a: "./../yolov8n.pt"
