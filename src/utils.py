@@ -63,7 +63,7 @@ def get_image_files(directory: str, extensions=('.jpg', '.jpeg', '.png', '.bmp')
     image_files = []
     for ext in extensions:
         image_files.extend(Path(directory).glob(f'*{ext}'))         # linux系统会区分大小写，但是windows不区分大小写
-        image_files.extend(Path(directory).glob(f'*{ext.upper()}'))
+        # image_files.extend(Path(directory).glob(f'*{ext.upper()}'))
     return sorted(image_files)
 
 

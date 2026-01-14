@@ -38,6 +38,7 @@ data/*
 # Models
 models/pretrained/
 models/trained/
+models/*
 
 # Output
 output/

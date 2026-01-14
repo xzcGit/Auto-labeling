@@ -1,1 +1,8 @@
+door: F:\code\utils\auto-labeling-codex\models\shared\door\train\weights\best.pt
+light: F:\code\utils\auto-labeling-codex\models\shared\light\train\weights\best.pt
+light_duanlu: F:\code\utils\auto-labeling-codex\models\shared\light_duanlu\train\weights\best.pt
+light_duanlu_inter: F:\code\utils\auto-labeling-codex\models\shared\light_duanlu_inter\train\weights\best.pt
 pointer: F:\code\utils\auto-labeling-codex\models\trained\pointer\train\weights\best.pt
+status_air_switch: F:\code\utils\auto-labeling-codex\models\shared\status_air_switch\train\weights\best.pt
+status_trip_connector: F:\code\utils\auto-labeling-codex\models\shared\status_trip_connector\train\weights\best.pt
+switch_8direction: F:\code\utils\auto-labeling-codex\models\shared\switch_8direction\train\weights\best.pt
